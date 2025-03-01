@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenRouter.ai Free Models Client</title>
+    <!-- Thêm các thư viện xử lý -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.5/purify.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/default.min.css">
+    <!-- Biểu tượng -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        line-height: 1.6;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .top-bar {
+        background-color: #f8f8f8;
+        padding: 10px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid #ddd;
+    }
+    
+    .app-title {
+        font-size: 1.2rem;
+        font-weight: bold;
+        margin: 0;
+    }
+    
+    .settings-toggle {
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        padding: 8px 12px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+    
+    .settings-toggle:hover {
+        background-color: #45a049;
+    }
+    
+    .main-container {
+        display: flex;
+        flex-direction: column;
+        height: calc(100vh - 60px); /* Trừ đi chiều cao của top-bar */
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .settings-panel {
+        background-color: #f0f0f0;
+        padding: 15px 20px;
+        border-bottom: 1px solid #ccc;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out;
+        max-height: 0;
+        opacity: 0;
+        overflow: hidden;
+    }
+    
+    .settings-panel.visible {
+        max-height: 100vh;
+        opacity: 1;
+        overflow: auto;
+    }
+    
+    .chat-container {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        padding: 20px;
+        overflow-y: auto;
+    }
+    
+    .container, .settings { 
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 15px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        width: auto;
+    }
+    
+    .chat-history {
+        flex: 1;
+        overflow-y: auto;
+        margin-bottom: 15px;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        background-color: #fff;
+    }
+    
+    textarea {
+        width: 100%;
+        height: 100px;
+        margin-bottom: 10px;
+        padding: 8px;
+        border-radius: 4px;
+        border: 1px solid #ccc;
+        font-family: inherit;
+        box-sizing: border-box;
+        resize: vertical;
+    }
+    
+    #system-prompt {
+        height: 80px;
+    }
+    
+    select, input {
+        width: 100%;
+        padding: 8px;
+        margin-bottom: 10px;
+        border-radius: 4px;
+        border: 1px solid #ccc;
+        box-sizing: border-box;
+    }
+    
+    button {
+        background-color: #4CAF50;
+        color: white;
+        padding: 10px 15px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-right: 5px;
+    }
+    
+    button:hover {
+        background-color: #45a049;
+    }
+    
+    .button-container {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+    
+    .response {
+        white-space: pre-wrap;
+        background-color: #f8f8f8;
+        padding: 10px;
+        border-radius: 4px;
+        margin-top: 10px;
+    }
+    
+    .message {
+        margin-bottom: 15px;
+        padding: 10px;
+        border-radius: 8px;
+    }
+    
+    .user {
+        background-color: #e6f7ff;
+    }
+    
+    .assistant {
+        background-color: #f0f0f0;
+    }
+    
+    .system {
+        background-color: #fff3e0;
+        border-left: 3px solid #ff9800;
+    }
+    
+    .markdown-content img {
+        max-width: 100%;
+        height: auto;
+    }
+    
+    .markdown-content pre {
+        background-color: #f5f5f5;
+        padding: 10px;
+        border-radius: 4px;
+        overflow-x: auto;
+    }
+    
+    .markdown-content code {
+        font-family: monospace;
+    }
+    
+    .markdown-content h1, .markdown-content h2, .markdown-content h3 {
+        margin-top: 20px;
+        margin-bottom: 10px;
+    }
+    
+    .markdown-content table {
+        border-collapse: collapse;
+        width: 100%;
+    }
+    
+    .markdown-content th, .markdown-content td {
+        border: 1px solid #ddd;
+        padding: 8px;
+    }
+    
+    .markdown-content tr:nth-child(even) {
+        background-color: #f2f2f2;
+    }
+    
+    .advanced-settings {
+        margin-top: 10px;
+        padding-top: 10px;
+        border-top: 1px solid #ddd;
+    }
+    
+    .advanced-toggle {
+        cursor: pointer;
+        color: #2196F3;
+        display: inline-block;
+        margin-bottom: 10px;
+    }
+    
+    .advanced-toggle:hover {
+        text-decoration: underline;
+    }
+    
+    .advanced-content {
+        display: none;
+    }
+    
+    .settings-section {
+        margin-bottom: 15px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid #ddd;
+    }
+    
+    .settings-section:last-child {
+        border-bottom: none;
+    }
+    
+    .settings-section h3 {
+        margin-top: 0;
+        margin-bottom: 10px;
+    }
+    
+    #loading {
+        margin-top: 10px;
+        font-style: italic;
+        color: #666;
+    }
+    
+    /* Đã loại bỏ CSS cho model-quick-select */
+    
+    .input-container {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .input-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    @media (max-width: 768px) {
+        .button-container {
+            flex-direction: row;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            flex: 1;
+            min-width: calc(50% - 5px);
+            margin-right: 0;
+            margin-bottom: 5px;
+            padding: 10px 5px;
+        }
+    }
+</style>
+</head>
+<body>
+    <div class="top-bar">
+        <h1 class="app-title">OpenRouter.ai Free Models Client</h1>
+        <button class="settings-toggle" id="settings-toggle">
+            <i class="fas fa-cog"></i> Cài đặt
+        </button>
+    </div>
+    
+    <div class="main-container">
+        <!-- Settings Panel (Mặc định ẩn) -->
+        <div class="settings-panel" id="settings-panel">
+            <div class="settings-section">
+                <h3>API và Mô hình</h3>
+                <label for="api-key">API Key:</label>
+                <input type="password" id="api-key" placeholder="Nhập API key của OpenRouter.ai">
+                
+                <label for="model-select">Chọn mô hình:</label>
+                <select id="model-select">
+                    <option value="google/gemini-2.0-flash-lite-preview-02-05:free">Google: Gemini Flash Lite 2.0 Preview (free)</option>
+                    <option value="google/gemini-2.0-pro-exp-02-05:free">Google: Gemini Pro 2.0 Experimental (free)</option>
+                    <option value="google/gemini-2.0-flash-thinking-exp:free">Google: Gemini 2.0 Flash Thinking Experimental 01-21 (free)</option>
+                </select>
+            </div>
+            
+            <div class="settings-section">
+                <h3>Cài đặt Phản hồi</h3>
+                <label for="temperature">Temperature: <span id="temp-value">0.7</span></label>
+                <input type="range" id="temperature" min="0" max="1" step="0.1" value="0.7">
+                
+                <label for="max-tokens">Max Tokens:</label>
+                <input type="number" id="max-tokens" value="2048" min="1" max="4096">
+                
+                <div style="margin-top: 10px;">
+                    <input type="checkbox" id="format-markdown" checked>
+                    <label for="format-markdown">Định dạng Markdown trong phản hồi</label>
+                </div>
+            </div>
+            
+            <div class="settings-section">
+                <h3>System Prompt</h3>
+                <textarea id="system-prompt" placeholder="Nhập system prompt ở đây (mặc định trống)"></textarea>
+                <p style="font-size: 0.9em; color: #666;">System prompt giúp định hướng AI cách phản hồi. Ví dụ: "Bạn là một trợ lý gia sư dạy toán" hoặc "Hãy trả lời ngắn gọn bằng tiếng Việt".</p>
+                
+                <div class="button-container">
+                    <button id="save-system-prompt">Lưu System Prompt</button>
+                    <button id="clear-system-prompt">Xóa System Prompt</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Chat Container (Luôn hiển thị) -->
+        <div class="chat-container">            
+            <div class="chat-history" id="chat-history"></div>
+            
+            <div class="input-container">
+                <label for="user-input">Tin nhắn của bạn:</label>
+                <textarea id="user-input" placeholder="Nhập tin nhắn của bạn ở đây..."></textarea>
+                
+                <div class="input-actions">
+                    <div class="button-container">
+                        <button id="send-button"><i class="fas fa-paper-plane"></i> Gửi</button>
+                        <button id="clear-button"><i class="fas fa-trash"></i> Xóa chat</button>
+                        <button id="copy-button"><i class="fas fa-copy"></i> Sao chép</button>
+                        <button id="download-button"><i class="fas fa-download"></i> Tải xuống</button>
+                    </div>
+                    
+                    <div id="loading" style="display: none;">Đang xử lý...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Phần điều khiển hiển thị settings panel
+            const settingsToggle = document.getElementById('settings-toggle');
+            const settingsPanel = document.getElementById('settings-panel');
+            
+            // Kiểm tra trạng thái đã lưu
+            const settingsVisible = localStorage.getItem('settings_visible') === 'true';
+            
+            // Thiết lập trạng thái mặc định (ẩn)
+            if (settingsVisible) {
+                settingsPanel.classList.add('visible');
+                settingsToggle.innerHTML = '<i class="fas fa-times"></i> Đóng cài đặt';
+            }
+            
+            settingsToggle.addEventListener('click', function() {
+                settingsPanel.classList.toggle('visible');
+                const isVisible = settingsPanel.classList.contains('visible');
+                
+                // Lưu trạng thái
+                localStorage.setItem('settings_visible', isVisible);
+                
+                // Thay đổi nội dung nút
+                if (isVisible) {
+                    settingsToggle.innerHTML = '<i class="fas fa-times"></i> Đóng cài đặt';
+                } else {
+                    settingsToggle.innerHTML = '<i class="fas fa-cog"></i> Cài đặt';
+                }
+            });
+            
+            // Đã loại bỏ phần tạo nút chọn mô hình nhanh
+            const modelSelect = document.getElementById('model-select');
+            
+            // Cài đặt Marked.js để xử lý Markdown
+            marked.setOptions({
+                renderer: new marked.Renderer(),
+                highlight: function(code, language) {
+                    const validLanguage = hljs.getLanguage(language) ? language : 'plaintext';
+                    return hljs.highlight(validLanguage, code).value;
+                },
+                pedantic: false,
+                gfm: true,
+                breaks: true,
+                sanitize: false,
+                smartypants: false,
+                xhtml: false
+            });
+            
+            // Update temperature value display
+            const tempSlider = document.getElementById('temperature');
+            const tempValue = document.getElementById('temp-value');
+            
+            tempSlider.addEventListener('input', function() {
+                tempValue.textContent = this.value;
+            });
+            
+            // Handle send button click
+            const sendButton = document.getElementById('send-button');
+            const userInput = document.getElementById('user-input');
+            const chatHistory = document.getElementById('chat-history');
+            const apiKeyInput = document.getElementById('api-key');
+            const maxTokensInput = document.getElementById('max-tokens');
+            const loadingIndicator = document.getElementById('loading');
+            const formatMarkdownCheckbox = document.getElementById('format-markdown');
+            const systemPromptInput = document.getElementById('system-prompt');
+            
+            // Load saved settings if available
+            if (localStorage.getItem('openrouter_api_key')) {
+                apiKeyInput.value = localStorage.getItem('openrouter_api_key');
+            }
+            
+            if (localStorage.getItem('system_prompt')) {
+                systemPromptInput.value = localStorage.getItem('system_prompt');
+            }
+            
+            if (localStorage.getItem('selected_model')) {
+                modelSelect.value = localStorage.getItem('selected_model');
+            }
+            
+            if (localStorage.getItem('temperature')) {
+                const savedTemp = localStorage.getItem('temperature');
+                tempSlider.value = savedTemp;
+                tempValue.textContent = savedTemp;
+            }
+            
+            if (localStorage.getItem('max_tokens')) {
+                maxTokensInput.value = localStorage.getItem('max_tokens');
+            }
+            
+            // System prompt buttons
+            document.getElementById('save-system-prompt').addEventListener('click', function() {
+                localStorage.setItem('system_prompt', systemPromptInput.value);
+                alert('System prompt đã được lưu!');
+            });
+            
+            document.getElementById('clear-system-prompt').addEventListener('click', function() {
+                systemPromptInput.value = '';
+                localStorage.removeItem('system_prompt');
+                alert('System prompt đã được xóa!');
+            });
+            
+            let messages = [];
+            let systemPromptAdded = false;
+            
+            sendButton.addEventListener('click', async function() {
+                const userMessage = userInput.value.trim();
+                const apiKey = apiKeyInput.value.trim();
+                const systemPrompt = systemPromptInput.value.trim();
+                
+                if (!userMessage) {
+                    alert('Vui lòng nhập tin nhắn!');
+                    return;
+                }
+                
+                if (!apiKey) {
+                    alert('Vui lòng nhập API key!');
+                    settingsPanel.classList.add('visible');
+                    localStorage.setItem('settings_visible', 'true');
+                    settingsToggle.innerHTML = '<i class="fas fa-times"></i> Đóng cài đặt';
+                    return;
+                }
+                
+                // Save settings
+                localStorage.setItem('openrouter_api_key', apiKey);
+                localStorage.setItem('temperature', tempSlider.value);
+                localStorage.setItem('max_tokens', maxTokensInput.value);
+                
+                // Nếu đây là tin nhắn đầu tiên và có system prompt
+                if (!systemPromptAdded && systemPrompt) {
+                    // Thêm system prompt vào messages nhưng không hiển thị trong chat history
+                    messages.push({ role: 'system', content: systemPrompt });
+                    systemPromptAdded = true;
+                    
+                    // Hiển thị system prompt trong chat history (tùy chọn)
+                    appendSystemMessage(systemPrompt);
+                }
+                
+                // Add user message to chat history
+                appendMessage('user', userMessage);
+                messages.push({ role: 'user', content: userMessage });
+                
+                // Clear input
+                userInput.value = '';
+                
+                // Show loading indicator
+                loadingIndicator.style.display = 'block';
+                
+                try {
+                    // Make API request
+                    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${apiKey}`,
+                            'HTTP-Referer': window.location.href,
+                            'X-Title': 'OpenRouter HTML Client'
+                        },
+                        body: JSON.stringify({
+                            model: modelSelect.value,
+                            messages: messages,
+                            temperature: parseFloat(tempSlider.value),
+                            max_tokens: parseInt(maxTokensInput.value),
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        const assistantMessage = data.choices[0].message.content;
+                        messages.push({ role: 'assistant', content: assistantMessage });
+                        appendMessage('assistant', assistantMessage, formatMarkdownCheckbox.checked);
+                    } else {
+                        console.error('API Error:', data);
+                        alert('Lỗi API: ' + (data.error?.message || 'Không xác định'));
+                    }
+                } catch (error) {
+                    console.error('Request Error:', error);
+                    alert('Lỗi kết nối: ' + error.message);
+                } finally {
+                    // Hide loading indicator
+                    loadingIndicator.style.display = 'none';
+                }
+            });
+            
+            // Clear chat history
+            document.getElementById('clear-button').addEventListener('click', function() {
+                chatHistory.innerHTML = '';
+                messages = [];
+                systemPromptAdded = false;
+            });
+            
+            // Copy to clipboard button
+            document.getElementById('copy-button').addEventListener('click', function() {
+                if (messages.length === 0) {
+                    alert('Không có nội dung để sao chép!');
+                    return;
+                }
+                
+                // Extract the latest assistant message
+                const lastAssistantMessage = messages.filter(msg => msg.role === 'assistant').pop();
+                
+                if (!lastAssistantMessage) {
+                    alert('Không có phản hồi của AI để sao chép!');
+                    return;
+                }
+                
+                // Copy to clipboard
+                navigator.clipboard.writeText(lastAssistantMessage.content)
+                    .then(() => {
+                        alert('Đã sao chép phản hồi vào clipboard!');
+                    })
+                    .catch(err => {
+                        console.error('Lỗi khi sao chép:', err);
+                        alert('Không thể sao chép: ' + err);
+                    });
+            });
+            
+            // Download chat history
+            document.getElementById('download-button').addEventListener('click', function() {
+                if (messages.length === 0) {
+                    alert('Không có nội dung để tải xuống!');
+                    return;
+                }
+                
+                const chatContent = messages.map(msg => 
+                    `Role: ${msg.role}\nContent: ${msg.content}\n\n`
+                ).join('---\n');
+                
+                const blob = new Blob([chatContent], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'chat_history_' + new Date().toISOString().slice(0, 10) + '.txt';
+                a.click();
+                URL.revokeObjectURL(url);
+            });
+            
+            // Enter key to send message
+            userInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendButton.click();
+                }
+            });
+            
+            // Helper function to append system message to chat history
+            function appendSystemMessage(content) {
+                const messageDiv = document.createElement('div');
+                messageDiv.classList.add('message', 'system');
+                
+                const roleSpan = document.createElement('strong');
+                roleSpan.textContent = 'System: ';
+                
+                const contentDiv = document.createElement('div');
+                contentDiv.classList.add('response');
+                contentDiv.textContent = content;
+                
+                messageDiv.appendChild(roleSpan);
+                messageDiv.appendChild(contentDiv);
+                
+                chatHistory.appendChild(messageDiv);
+                
+                // Scroll to bottom
+                chatHistory.scrollTop = chatHistory.scrollHeight;
+            }
+            
+            // Helper function to append messages to chat history
+            function appendMessage(role, content, formatAsMarkdown = false) {
+                const messageDiv = document.createElement('div');
+                messageDiv.classList.add('message', role);
+                
+                const roleSpan = document.createElement('strong');
+                roleSpan.textContent = role === 'user' ? 'Bạn: ' : 'AI: ';
+                
+                const contentDiv = document.createElement('div');
+                
+                if (formatAsMarkdown && role === 'assistant') {
+                    contentDiv.classList.add('markdown-content');
+                    // Sử dụng DOMPurify để làm sạch HTML trước khi chèn vào trang
+                    contentDiv.innerHTML = DOMPurify.sanitize(marked.parse(content));
+                    // Highlight code blocks
+                    contentDiv.querySelectorAll('pre code').forEach((block) => {
+                        hljs.highlightBlock(block);
+                    });
+                } else {
+                    contentDiv.classList.add('response');
+                    contentDiv.textContent = content;
+                }
+                
+                messageDiv.appendChild(roleSpan);
+                messageDiv.appendChild(contentDiv);
+                
+                chatHistory.appendChild(messageDiv);
+                
+                // Scroll to bottom
+                chatHistory.scrollTop = chatHistory.scrollHeight;
+            }
+        });
+    </script>
+</body>
+</html>
